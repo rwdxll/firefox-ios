@@ -1616,7 +1616,7 @@ extension BrowserViewController: TabToolbarDelegate, PhotonActionSheetProtocol {
         }
         
         // The logic of which actions appear when isnt final.
-        if let tab = self.tabManager.selectedTab, let url = tab.url, !url.isLocal {
+        if let tab = self.tabManager.selectedTab, let url = tab.url {
             let pageActions = self.getTabActions(tab: tab, buttonView: button,
                                                  presentShareMenu: actionMenuPresenter,
                                                  findInPage: findInPageAction, presentableVC: self)
