@@ -92,6 +92,11 @@ class AutocompleteTextField: UITextField, UITextFieldDelegate {
         let newBounds = super.editingRect(forBounds: bounds)
         return UIEdgeInsetsInsetRect(newBounds, UIEdgeInsetsMake(0, 5, 0, 0))
     }
+    
+    override func textRect(forBounds bounds: CGRect) -> CGRect {
+        let newBounds = super.textRect(forBounds: bounds)
+        return UIEdgeInsetsInsetRect(newBounds, UIEdgeInsetsMake(0, 5, 0, 0))
+    }
 
     override var keyCommands: [UIKeyCommand]? {
         return [

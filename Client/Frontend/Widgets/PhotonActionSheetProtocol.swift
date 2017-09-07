@@ -89,7 +89,7 @@ extension PhotonActionSheetProtocol {
             NightModeHelper.toggle(self.profile.prefs, tabManager: self.tabManager)
         }
         
-        return [noImageMode, nightMode]
+        return [nightMode, noImageMode]
     }
     
     func getTabActions(tab: Tab, buttonView: UIView,
@@ -146,7 +146,7 @@ extension PhotonActionSheetProtocol {
             }
         }
         
-        let share = PhotonActionSheetItem(title: "Share", iconString: "action_share") { action in
+        let share = PhotonActionSheetItem(title: "Share Page With...", iconString: "action_share") { action in
             guard let url = self.tabManager.selectedTab?.url else { return }
             guard let tab = self.tabManager.selectedTab else { return }
             presentShareMenu(url, tab, buttonView, .up)
@@ -160,7 +160,7 @@ extension PhotonActionSheetProtocol {
         if let tab = self.tabManager.selectedTab, tab.readerModeAvailable {
             topActions.append(addReadingList)
         }
-        return [topActions, [findInPageAction, toggleDesktopSite, setHomePage], [share, copyURL]]
+        return [topActions, [copyURL, findInPageAction, toggleDesktopSite, setHomePage], [share]]
     }
     
     func getTabMenuActions(openURL: @escaping URLOpenAction, showTabs showTabsTrayAction: @escaping MenuAction) -> [PhotonActionSheetItem] {
@@ -170,11 +170,11 @@ extension PhotonActionSheetProtocol {
             HomePageHelper(prefs: self.profile.prefs).openHomePage(tab)
         }
         
-        let openTab = PhotonActionSheetItem(title: "Open new Tab", iconString: "menu-NewTab") { action in
+        let openTab = PhotonActionSheetItem(title: "New Tab", iconString: "menu-NewTab") { action in
             openURL(nil, false)
         }
         
-        let openPrivateTab = PhotonActionSheetItem(title: "Open private Tab", iconString: "smallPrivateMask") { action in
+        let openPrivateTab = PhotonActionSheetItem(title: "New Tab in Private Mode", iconString: "smallPrivateMask") { action in
             openURL(nil, true)
         }
         
@@ -183,7 +183,7 @@ extension PhotonActionSheetProtocol {
             showTabsTrayAction()
         }
         
-        var actions = [openTab, openPrivateTab]
+        var actions = [openPrivateTab, openTab]
         // On the iPad there is already a tabs button near the menu button. Dont need an extra openTab
         if UIDevice.current.userInterfaceIdiom != .pad {
             actions.append(openTabTray)
