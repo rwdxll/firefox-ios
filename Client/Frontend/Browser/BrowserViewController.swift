@@ -1386,6 +1386,13 @@ extension BrowserViewController: URLBarDelegate {
         }
         return profile.searchEngines.queryForSearchURL(searchURL as URL?) ?? url?.absoluteString
     }
+    
+    func urlBarDidPressQRButton(_ urlBar: URLBarView) {
+        let qrCodeViewController = QRCodeViewController()
+        qrCodeViewController.qrCodeDelegate = self
+        let controller = UINavigationController(rootViewController: qrCodeViewController)
+        self.present(controller, animated: true, completion: nil)
+    }
 
     func urlBarDidLongPressLocation(_ urlBar: URLBarView) {
         let longPressAlertController = UIAlertController(title: nil, message: nil, preferredStyle: .actionSheet)
