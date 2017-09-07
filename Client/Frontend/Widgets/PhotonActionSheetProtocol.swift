@@ -87,7 +87,7 @@ extension PhotonActionSheetProtocol {
             NightModeHelper.toggle(self.profile.prefs, tabManager: self.tabManager)
         }
         
-        return [noImageMode, nightMode]
+        return [nightMode, noImageMode]
     }
     
     func getTabActions(tab: Tab, buttonView: UIView,
@@ -157,7 +157,7 @@ extension PhotonActionSheetProtocol {
         if let tab = self.tabManager.selectedTab, tab.readerModeAvailable {
             topActions.append(addReadingList)
         }
-        return [topActions, [findInPageAction, toggleDesktopSite, setHomePage], [share, copyURL]]
+        return [topActions, [copyURL, findInPageAction, toggleDesktopSite, setHomePage], [share]]
     }
     
     func getTabMenuActions(openURL: @escaping URLOpenAction, showTabs showTabsTrayAction: @escaping MenuAction) -> [PhotonActionSheetItem] {
@@ -180,7 +180,7 @@ extension PhotonActionSheetProtocol {
             showTabsTrayAction()
         }
         
-        var actions = [openTab, openPrivateTab]
+        var actions = [openPrivateTab, openTab]
         // On the iPad there is already a tabs button near the menu button. Dont need an extra openTab
         if UIDevice.current.userInterfaceIdiom != .pad {
             actions.append(openTabTray)
