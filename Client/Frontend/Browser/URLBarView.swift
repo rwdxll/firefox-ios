@@ -43,7 +43,7 @@ struct URLBarViewUX {
         theme.activeBorderColor = TextFieldActiveBorderColor
         theme.disabledButtonColor = UIColor.lightGray
         theme.highlightButtonColor = UIColor(rgb: 0x00A2FE)
-        theme.tintColor = ProgressTintColor
+      //  theme.tintColor = ProgressTintColor
         theme.textColor = UIColor(rgb: 0x272727)
         theme.backgroundColor = UIConstants.AppBackgroundColor
         theme.buttonTintColor = UIColor(rgb: 0x272727)
@@ -167,9 +167,9 @@ class URLBarView: UIView {
         return tabsButton
     }()
 
-    fileprivate lazy var progressBar: UIProgressView = {
-        let progressBar = UIProgressView()
-        progressBar.progressTintColor = URLBarViewUX.ProgressTintColor
+    fileprivate lazy var progressBar: GradientProgressBar = {
+        let progressBar = GradientProgressBar()
+       // progressBar.progressTintColor = URLBarViewUX.ProgressTintColor
         progressBar.alpha = 0
         progressBar.trackTintColor = .clear
         progressBar.isHidden = true
@@ -428,15 +428,14 @@ class URLBarView: UIView {
     }
 
     func updateProgressBar(_ progress: Float) {
+        self.progressBar.alpha = 1.0
+        if progress == 0 {
+            self.progressBar.animateGradient()
+        }
         if progress == 1.0 {
             self.progressBar.setProgress(progress, animated: !isTransitioning)
-            UIView.animate(withDuration: 1.5, animations: {
-                self.progressBar.alpha = 0.0
-            })
+            self.progressBar.hideProgressBar()
         } else {
-            if self.progressBar.alpha < 1.0 {
-                self.progressBar.alpha = 1.0
-            }
             self.progressBar.setProgress(progress, animated: (progress > progressBar.progress) && !isTransitioning)
         }
     }
@@ -729,11 +728,17 @@ extension URLBarView: Themeable {
         guard let theme = URLBarViewUX.Themes[themeName] else {
             fatalError("Theme not found")
         }
+        //do this better
+        if themeName == "Private" {
+            progressBar.setGradientColors(startColor: UIColor(rgb: 0x9400ff), endColor: UIColor(rgb: 0xff1ad9))
+        } else {
+            progressBar.setGradientColors(startColor: UIColor(rgb: 0x00DCFC), endColor: UIColor(rgb: 0x0A84FF))
 
+        }
         currentTheme = themeName
         locationBorderColor = theme.borderColor!
         locationActiveBorderColor = theme.activeBorderColor!
-        progressBarTint = theme.tintColor
+     //   progressBarTint = theme.tintColor
         cancelTextColor = theme.textColor
         actionButtonTintColor = theme.buttonTintColor
         actionButtonSelectedTintColor = theme.highlightButtonColor
