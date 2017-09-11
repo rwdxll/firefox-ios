@@ -12,7 +12,7 @@ private struct HomePanelViewControllerUX {
     // Height of the top panel switcher button toolbar.
     static let ButtonContainerHeight: CGFloat = 40
     static let ButtonContainerBorderColor = UIColor.black.withAlphaComponent(0.1)
-    static let BackgroundColorNormalMode = UIConstants.PanelBackgroundColor
+    static let BackgroundColorNormalMode = UIConstants.AppBackgroundColor
     static let BackgroundColorPrivateMode = UIConstants.PrivateModeAssistantToolbarBackgroundColor
     static let ToolbarButtonDeselectedColorNormalMode = UIColor(white: 0.2, alpha: 0.5)
     static let ToolbarButtonDeselectedColorPrivateMode = UIColor(white: 0.9, alpha: 1)
@@ -64,50 +64,48 @@ class HomePanelViewController: UIViewController, UITextFieldDelegate, HomePanelD
     var url: URL?
     weak var delegate: HomePanelViewControllerDelegate?
 
-    fileprivate var buttonContainerView: UIView!
+    fileprivate var buttonContainerView = UIStackView()
     fileprivate var buttonContainerBottomBorderView: UIView!
     fileprivate var controllerContainerView: UIView!
     fileprivate var buttons: [UIButton] = []
+    fileprivate var highlightLine = UIView() //The line underneath a panel button that shows which one is selected
 
     var homePanelState: HomePanelState {
         return HomePanelState(selectedIndex: selectedPanel?.rawValue ?? 0)
     }
 
     override func viewDidLoad() {
-        view.backgroundColor = HomePanelViewControllerUX.BackgroundColorNormalMode
-
-        let blur: UIVisualEffectView? = DeviceInfo.isBlurSupported() ? UIVisualEffectView(effect: UIBlurEffect(style: UIBlurEffectStyle.light)) : nil
-
-        if let blur = blur {
-            view.addSubview(blur)
-        }
-
-        buttonContainerView = UIView()
-        buttonContainerView.backgroundColor = HomePanelViewControllerUX.BackgroundColorNormalMode
+        view.backgroundColor = UIConstants.AppBackgroundColor
+        
+        buttonContainerView.backgroundColor = UIConstants.AppBackgroundColor
+        buttonContainerView.axis = .horizontal
+        buttonContainerView.alignment = .fill
+        buttonContainerView.distribution = .fillEqually
+        buttonContainerView.spacing = 14
         buttonContainerView.clipsToBounds = true
         buttonContainerView.accessibilityNavigationStyle = .combined
         buttonContainerView.accessibilityLabel = NSLocalizedString("Panel Chooser", comment: "Accessibility label for the Home panel's top toolbar containing list of the home panels (top sites, bookmarsk, history, remote tabs, reading list).")
         view.addSubview(buttonContainerView)
-
+        buttonContainerView.addSubview(highlightLine)
+        highlightLine.backgroundColor = UIConstants.HighlightBlue
+        
         self.buttonContainerBottomBorderView = UIView()
-        buttonContainerView.addSubview(buttonContainerBottomBorderView)
+        self.view.addSubview(buttonContainerBottomBorderView)
         buttonContainerBottomBorderView.backgroundColor = HomePanelViewControllerUX.ButtonContainerBorderColor
 
         controllerContainerView = UIView()
         view.addSubview(controllerContainerView)
 
-        blur?.snp.makeConstraints { make in
-            make.edges.equalTo(self.view)
-        }
-
         buttonContainerView.snp.makeConstraints { make in
-            make.top.left.right.equalTo(self.view)
+            make.top.equalTo(self.view)
+            make.leading.trailing.equalTo(self.view).inset(14)
             make.height.equalTo(HomePanelViewControllerUX.ButtonContainerHeight)
         }
 
         buttonContainerBottomBorderView.snp.makeConstraints { make in
             make.top.equalTo(self.buttonContainerView.snp.bottom).offset(-1)
-            make.left.right.bottom.equalTo(self.buttonContainerView)
+            make.bottom.equalTo(self.buttonContainerView)
+            make.leading.trailing.equalToSuperview()
         }
 
         controllerContainerView.snp.makeConstraints { make in
@@ -117,7 +115,7 @@ class HomePanelViewController: UIViewController, UITextFieldDelegate, HomePanelD
 
         self.panels = HomePanels().enabledPanels
         updateButtons()
-
+        
         // Gesture recognizer to dismiss the keyboard in the URLBarView when the buttonContainerView is tapped
         let dismissKeyboardGestureRecognizer = UITapGestureRecognizer(target: self, action: #selector(HomePanelViewController.SELhandleDismissKeyboardGestureRecognizer(_:)))
         dismissKeyboardGestureRecognizer.cancelsTouchesInView = false
@@ -201,7 +199,7 @@ class HomePanelViewController: UIViewController, UITextFieldDelegate, HomePanelD
         panel.didMove(toParentViewController: self)
     }
 
-    func SELtappedButton(_ sender: UIButton!) {
+    func tappedButton(_ sender: UIButton!) {
         for (index, button) in buttons.enumerated() where button == sender {
             selectedPanel = HomePanelType(rawValue: index)
             delegate?.homePanelViewController(self, didSelectPanel: index)
@@ -210,46 +208,46 @@ class HomePanelViewController: UIViewController, UITextFieldDelegate, HomePanelD
     }
 
     fileprivate func updateButtons() {
-        // Remove any existing buttons if we're rebuilding the toolbar.
-        for button in buttons {
-            button.removeFromSuperview()
-        }
-        buttons.removeAll()
-
-        var prev: UIView? = nil
         for panel in panels {
             let button = UIButton()
-            buttonContainerView.addSubview(button)
-            button.addTarget(self, action: #selector(HomePanelViewController.SELtappedButton(_:)), for: UIControlEvents.touchUpInside)
+            button.addTarget(self, action: #selector(HomePanelViewController.tappedButton(_:)), for: .touchUpInside)
             if let image = UIImage.templateImageNamed("panelIcon\(panel.imageName)") {
                 button.setImage(image, for: UIControlState.normal)
             }
             if let image = UIImage.templateImageNamed("panelIcon\(panel.imageName)Selected") {
                 button.setImage(image, for: UIControlState.selected)
             }
+            button.imageEdgeInsets = UIEdgeInsets(top: 0, left: 0, bottom: 4, right: 0)
             button.accessibilityLabel = panel.accessibilityLabel
             button.accessibilityIdentifier = panel.accessibilityIdentifier
             buttons.append(button)
-
-            button.snp.remakeConstraints { make in
-                let left = prev?.snp.right ?? self.view.snp.left
-                make.left.equalTo(left)
-                make.height.centerY.equalTo(self.buttonContainerView)
-                make.width.equalTo(self.buttonContainerView).dividedBy(self.panels.count)
-            }
-
-            prev = button
+            self.buttonContainerView.addArrangedSubview(button)
         }
     }
     
     func updateButtonTints() {
+        var selectedbutton: UIView!
         for (index, button) in self.buttons.enumerated() {
             if index == self.selectedPanel?.rawValue {
                 button.tintColor = UIConstants.HighlightBlue
+                selectedbutton = button
             } else {
                 button.tintColor = HomePanelViewControllerUX.ToolbarButtonDeselectedColorNormalMode
             }
         }
+        
+        UIView.animate(withDuration: 0.3, delay: 0.0, usingSpringWithDamping: 0.85, initialSpringVelocity: 0.0, options: [], animations: { _ in
+            self.highlightLine.snp.remakeConstraints { make in
+                make.leading.equalTo(selectedbutton.snp.leading)
+                make.trailing.equalTo(selectedbutton.snp.trailing)
+                make.bottom.equalToSuperview()
+                make.height.equalTo(2)
+            }
+            self.view.setNeedsUpdateConstraints()
+            self.view.layoutIfNeeded()
+        }, completion: { _ in
+        })
+        
     }
 
     func homePanel(_ homePanel: HomePanel, didSelectURLString url: String, visitType: VisitType) {

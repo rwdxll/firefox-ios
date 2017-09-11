@@ -14,7 +14,7 @@ struct URLBarViewUX {
     static let TextFieldBorderColor = UIColor(rgb: 0xBBBBBB)
     static let TextFieldActiveBorderColor = UIColor(rgb: 0xB0D5FB)
     static let LocationLeftPadding = 8
-    static let LocationHeight = 42
+    static let LocationHeight = 40
     static let LocationContentOffset: CGFloat = 8
     static let TextFieldCornerRadius: CGFloat = 8
     static let TextFieldBorderWidth: CGFloat = 1
@@ -162,7 +162,7 @@ class URLBarView: UIView {
 
     fileprivate lazy var tabsButton: TabsButton = {
         let tabsButton = TabsButton.tabTrayButton()
-        tabsButton.addTarget(self, action: #selector(URLBarView.SELdidClickAddTab), for: UIControlEvents.touchUpInside)
+        tabsButton.addTarget(self, action: #selector(URLBarView.SELdidClickAddTab), for: .touchUpInside)
         tabsButton.accessibilityIdentifier = "URLBarView.tabsButton"
         return tabsButton
     }()
@@ -173,27 +173,35 @@ class URLBarView: UIView {
         progressBar.alpha = 0
         progressBar.trackTintColor = .clear
         progressBar.isHidden = true
+        progressBar.clipsToBounds = false
         return progressBar
     }()
 
     fileprivate lazy var cancelButton: UIButton = {
         let cancelButton = InsetButton()
-        cancelButton.setTitleColor(UIColor(rgb: 0x272727), for: UIControlState())
-        let cancelTitle = NSLocalizedString("Cancel", comment: "Label for Cancel button")
-        cancelButton.setTitle(cancelTitle, for: UIControlState())
-        cancelButton.titleLabel?.font = UIConstants.DefaultChromeFont
-        cancelButton.addTarget(self, action: #selector(URLBarView.SELdidClickCancel), for: UIControlEvents.touchUpInside)
-        cancelButton.titleEdgeInsets = UIEdgeInsets(top: 10, left: 12, bottom: 10, right: 12)
+        cancelButton.setImage(UIImage.templateImageNamed("goBack"), for: .normal)
+        cancelButton.tintColor = .black
+        cancelButton.addTarget(self, action: #selector(URLBarView.SELdidClickCancel), for: .touchUpInside)
         cancelButton.setContentHuggingPriority(1000, for: UILayoutConstraintAxis.horizontal)
         cancelButton.setContentCompressionResistancePriority(1000, for: UILayoutConstraintAxis.horizontal)
         cancelButton.alpha = 0
         return cancelButton
     }()
+    
+    var showQRScannerButton: UIButton = {
+        let button = UIButton()
+        button.setImage(UIImage.templateImageNamed("menu-ScanQRCode"), for: .normal)
+        button.clipsToBounds = false
+        button.addTarget(self, action: #selector(URLBarView.showQRScanner), for: .touchUpInside)
+        button.setContentHuggingPriority(1000, for: UILayoutConstraintAxis.horizontal)
+        button.setContentCompressionResistancePriority(1000, for: UILayoutConstraintAxis.horizontal)
+        return button
+    }()
 
 
     fileprivate lazy var scrollToTopButton: UIButton = {
         let button = UIButton()
-        button.addTarget(self, action: #selector(URLBarView.SELtappedScrollToTopArea), for: UIControlEvents.touchUpInside)
+        button.addTarget(self, action: #selector(URLBarView.SELtappedScrollToTopArea), for: .touchUpInside)
         return button
     }()
 
@@ -221,6 +229,9 @@ class URLBarView: UIView {
 
         set(newURL) {
             locationView.url = newURL
+            // Hide the separator line when showing the home panels.
+            line.isHidden = newURL?.isAboutHomeURL ?? true
+            
         }
     }
 
@@ -238,7 +249,7 @@ class URLBarView: UIView {
         locationContainer.addSubview(locationView)
         locationView.layer.cornerRadius = locationContainer.layer.cornerRadius
     
-        [scrollToTopButton, line, progressBar, tabsButton, cancelButton, shareButton].forEach { addSubview($0) }
+        [scrollToTopButton, line, progressBar, tabsButton, cancelButton, shareButton, showQRScannerButton].forEach { addSubview($0) }
         [menuButton, forwardButton, backButton, stopReloadButton, locationContainer].forEach { addSubview($0) }
         
         helper = TabToolbarHelper(toolbar: self)
@@ -262,6 +273,7 @@ class URLBarView: UIView {
 
         progressBar.snp.makeConstraints { make in
             make.top.equalTo(self.snp.bottom).offset(-1.5)
+            make.height.equalTo(3)
             make.left.right.equalTo(self)
         }
 
@@ -271,7 +283,7 @@ class URLBarView: UIView {
 
         cancelButton.snp.makeConstraints { make in
             make.centerY.equalTo(self.locationContainer)
-            make.trailing.equalTo(self)
+            make.leading.equalTo(self)
         }
 
         tabsButton.snp.makeConstraints { make in
@@ -308,6 +320,12 @@ class URLBarView: UIView {
             make.centerY.equalTo(self)
             make.size.equalTo(UIConstants.TopToolbarHeight)
         }
+        
+        showQRScannerButton.snp.makeConstraints { make in
+            make.centerY.equalTo(self.locationContainer)
+            make.size.equalTo(24)
+            make.trailing.equalTo(self).offset(-10)
+        }
     }
 
     override func updateConstraints() {
@@ -316,8 +334,8 @@ class URLBarView: UIView {
             // In overlay mode, we always show the location view full width
             self.locationContainer.layer.borderWidth = 4
             self.locationContainer.snp.remakeConstraints { make in
-                make.leading.equalTo(self).offset(URLBarViewUX.LocationLeftPadding - 4)
-                make.trailing.equalTo(self.cancelButton.snp.leading).offset(4)
+                make.leading.equalTo(self.cancelButton.snp.trailing).offset(4)
+                make.trailing.equalTo(self.showQRScannerButton.snp.leading).offset(-10)
                 make.height.equalTo(URLBarViewUX.LocationHeight+8)
                 make.centerY.equalTo(self)
             }
@@ -374,7 +392,6 @@ class URLBarView: UIView {
 
         guard let locationTextField = locationTextField else { return }
         
-        locationTextField.showQRScannerButton.addTarget(self, action: #selector(URLBarView.showQRScanner), for: .touchUpInside)
         locationTextField.translatesAutoresizingMaskIntoConstraints = false
         locationTextField.autocompleteDelegate = self
         locationTextField.keyboardType = UIKeyboardType.webSearch
@@ -490,11 +507,13 @@ class URLBarView: UIView {
         self.bringSubview(toFront: self.locationContainer)
         self.cancelButton.isHidden = false
         self.progressBar.isHidden = false
+        self.showQRScannerButton.isHidden = false
         self.menuButton.isHidden = !self.toolbarIsShowing
         self.forwardButton.isHidden = !self.toolbarIsShowing
         self.backButton.isHidden = !self.toolbarIsShowing
         self.shareButton.isHidden = !self.toolbarIsShowing
         self.stopReloadButton.isHidden = !self.toolbarIsShowing
+        
     }
 
     func transitionToOverlay(_ didCancel: Bool = false) {
@@ -505,12 +524,17 @@ class URLBarView: UIView {
         self.forwardButton.alpha = inOverlayMode ? 0 : 1
         self.backButton.alpha = inOverlayMode ? 0 : 1
         self.stopReloadButton.alpha = inOverlayMode ? 0 : 1
+        self.line.isHidden = inOverlayMode ? true : false
+        self.showQRScannerButton.alpha = inOverlayMode ? 1 : 0
+
 
         let borderColor = inOverlayMode ? locationActiveBorderColor : locationBorderColor
         locationContainer.layer.borderColor = borderColor.cgColor
 
         if inOverlayMode {
             self.cancelButton.transform = CGAffineTransform.identity
+            self.showQRScannerButton.transform = CGAffineTransform.identity
+
             let tabsButtonTransform = CGAffineTransform(translationX: self.tabsButton.frame.width, y: 0)
             self.tabsButton.transform = tabsButtonTransform
             self.rightBarConstraint?.update(offset: 0 + tabsButton.frame.width)
@@ -523,6 +547,8 @@ class URLBarView: UIView {
         } else {
             self.tabsButton.transform = CGAffineTransform.identity
             self.cancelButton.transform = CGAffineTransform(translationX: self.cancelButton.frame.width, y: 0)
+            self.showQRScannerButton.transform = CGAffineTransform(translationX: self.cancelButton.frame.width, y: 0)
+
             self.rightBarConstraint?.update(offset: defaultRightOffset)
 
             // Shrink the editable text field back to the size of the location view before hiding it.
@@ -534,6 +560,7 @@ class URLBarView: UIView {
 
     func updateViewsForOverlayModeAndToolbarChanges() {
         self.cancelButton.isHidden = !inOverlayMode
+        self.showQRScannerButton.isHidden = !inOverlayMode
         self.progressBar.isHidden = inOverlayMode
         self.menuButton.isHidden = !self.toolbarIsShowing || inOverlayMode
         self.forwardButton.isHidden = !self.toolbarIsShowing || inOverlayMode
@@ -747,6 +774,8 @@ extension URLBarView: Themeable {
         tabsButton.applyTheme(themeName)
         line.backgroundColor = UIConstants.URLBarDivider.color(isPBM: themeName == Theme.PrivateMode)
         locationContainer.layer.shadowColor = self.locationBorderColor.cgColor
+        showQRScannerButton.tintColor = theme.textColor
+
     }
 
 
@@ -781,26 +810,13 @@ class ToolbarTextField: AutocompleteTextField {
     
     // The QR mode button contains an image with a border only on the left side.
     // This creates a button with a separator line between the text and qr code button.
-    var showQRScannerButton: UIButton = {
-        let button = UIButton()
-        button.setImage(UIImage.templateImageNamed("menu-ScanQRCode"), for: .normal)
-        button.clipsToBounds = false
-        button.imageEdgeInsets = UIEdgeInsets(top: 2, left: 9, bottom: 2, right: 9)
-        return button
-    }()
+
 
     fileprivate var tintedClearImage: UIImage?
 
     override init(frame: CGRect) {
         super.init(frame: frame)
         self.clearButtonMode = .always
-        self.leftView = showQRScannerButton
-        self.leftView!.frame = CGRect(x: 0, y: -2, width: 24+18, height: 28)
-        self.leftViewMode = .always
-        let separatorLine = CALayer()
-        separatorLine.backgroundColor = UIColor.lightGray.cgColor
-        separatorLine.frame = CGRect(x: self.leftView!.frame.width, y: 0, width: 1, height: self.leftView!.frame.height)
-        self.leftView!.layer.addSublayer(separatorLine)
     }
 
     required init?(coder aDecoder: NSCoder) {
@@ -814,7 +830,7 @@ class ToolbarTextField: AutocompleteTextField {
         // subviews, find the clear button, and tint it ourselves. Thanks to Mikael Hellman for the tip:
         // http://stackoverflow.com/questions/27944781/how-to-change-the-tint-color-of-the-clear-button-on-a-uitextfield
         for view in subviews as [UIView] {
-            if let button = view as? UIButton, button != showQRScannerButton {
+            if let button = view as? UIButton {
                 if let image = button.image(for: UIControlState()) {
                     if tintedClearImage == nil {
                         tintedClearImage = tintImage(image, color: clearButtonTintColor)
@@ -865,6 +881,5 @@ extension ToolbarTextField: Themeable {
         textColor = theme.textColor
         clearButtonTintColor = theme.buttonTintColor
         highlightColor = theme.highlightColor!
-        showQRScannerButton.tintColor = theme.textColor
     }
 }

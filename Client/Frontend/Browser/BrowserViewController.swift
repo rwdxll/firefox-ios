@@ -724,7 +724,7 @@ class BrowserViewController: UIViewController {
             self.homePanelController = homePanelController
 
             addChildViewController(homePanelController)
-            view.addSubview(homePanelController.view)
+            view.insertSubview(homePanelController.view, belowSubview: self.urlBarTopTabsContainer)
             homePanelController.didMove(toParentViewController: self)
         }
         guard let homePanelController = self.homePanelController else {
@@ -742,7 +742,7 @@ class BrowserViewController: UIViewController {
             }
         }
         homePanelController.selectedPanel = HomePanelType(rawValue: newSelectedButtonIndex)
-
+//        self.view.bringSubview(toFront: urlBar)
         // We have to run this animation, even if the view is already showing because there may be a hide animation running
         // and we want to be sure to override its results.
         UIView.animate(withDuration: 0.2, animations: { () -> Void in
