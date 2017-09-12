@@ -102,6 +102,16 @@ class SyncNowSetting: WithAccountSetting {
     }()
 
     fileprivate var syncNowTitle: NSAttributedString {
+        if !DeviceInfo.hasConnectivity() {
+            return NSAttributedString(
+                string: Strings.FxANoInternetConnection,
+                attributes: [
+                    NSForegroundColorAttributeName: UIColor.red,
+                    NSFontAttributeName: DynamicFontHelper.defaultHelper.DefaultMediumFont
+                ]
+            )
+        }
+        
         return NSAttributedString(
             string: NSLocalizedString("Sync Now", comment: "Sync Firefox Account"),
             attributes: [
@@ -278,6 +288,10 @@ class SyncNowSetting: WithAccountSetting {
     }
 
     override func onClick(_ navigationController: UINavigationController?) {
+        if !DeviceInfo.hasConnectivity() {
+            return
+        }
+        
         NotificationCenter.default.post(name: Notification.Name(rawValue: SyncNowSetting.NotificationUserInitiatedSyncManually), object: nil)
         profile.syncManager.syncEverything(why: .syncNow)
     }
